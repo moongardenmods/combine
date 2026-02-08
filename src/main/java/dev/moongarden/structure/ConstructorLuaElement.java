@@ -27,6 +27,6 @@ public class ConstructorLuaElement extends AbstractExecutableLuaElement {
                 if (!last.equals(parameter)) builder.append(", ");
             }
         }
-        builder.append("): ").append(ClassLuaElement.getName(parent)).append("\n");
+        builder.append("): ").append(ClassLuaElement.getName(parent)).append(" ").append(access.type()).append("\n");
     }
 }

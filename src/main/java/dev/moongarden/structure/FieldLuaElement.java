@@ -1,20 +1,26 @@
 package dev.moongarden.structure;
 
 import dev.moongarden.Combine;
-import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EField;
+import me.basiqueevangelist.enhancedreflection.api.EType;
 import me.basiqueevangelist.enhancedreflection.api.typeuse.ETypeUse;
 
-import java.util.List;
-
 public class FieldLuaElement implements LuaElement {
-    private final ETypeUse returnType;
+    private final EType type;
+    private final Access access;
     private final String name;
 
     public FieldLuaElement(EField field) {
         Combine.makeVisible(field.rawFieldType());
-        returnType = field.fieldTypeUse();
-        name = field.name();
+        type = field.fieldType();
+        access = Access.getAccess(field);
+        if (field.name().contains("$")) {
+            name = "[\"" + field.name() + "\"]";
+        } else {
+            name = field.name();
+        }
+
+        field.fieldType().upperBound().typeVariableValues().forEach((t) -> Combine.makeVisible(t.upperBound()));
     }
 
     @Override
@@ -24,6 +30,6 @@ public class FieldLuaElement implements LuaElement {
 
     @Override
     public void build(StringBuilder builder) {
-        builder.append("--- @field ").append(name).append(" ").append(ClassLuaElement.getName(returnType.lowerBound().type())).append("\n");
+        builder.append("--- @field ").append(access.type()).append(" ").append(name).append(" ").append(ClassLuaElement.getName(type.upperBound())).append("\n");
     }
 }

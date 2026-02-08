@@ -31,6 +31,7 @@ public class MethodLuaElement extends AbstractExecutableLuaElement {
 
     @Override
     public void build(StringBuilder builder) {
+        builder.append("--- @").append(access.type()).append("\n");
         for (ParameterLuaElement parameter : parameters) {
             parameter.inMethodDoc(builder);
         }
@@ -41,13 +42,22 @@ public class MethodLuaElement extends AbstractExecutableLuaElement {
             builder.append(" ").append(type.type()).append(" ").append(type.details());
         }
         builder.append("\n");
-        builder.append("function ").append(parent.simpleName());
-        if (isStatic) {
-            builder.append("Class.");
+        if (name.contains("$")) {
+            builder.append(parent.simpleName());
+            if (isStatic) {
+                builder.append("Class");
+            }
+            builder.append("[\"").append(name).append("\"] = function");
         } else {
-            builder.append(":");
+            builder.append("function ").append(parent.simpleName());
+            if (isStatic) {
+                builder.append("Class.");
+            } else {
+                builder.append(":");
+            }
+            builder.append(name);
         }
-        builder.append(name).append("(");
+        builder.append("(");
         if (!parameters.isEmpty()) {
             ParameterLuaElement last = parameters.getLast();
             for (ParameterLuaElement parameter : parameters) {

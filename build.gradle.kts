@@ -31,7 +31,7 @@ loom {
 			client()
 			name("Generate Lua Sources")
 			vmArg("-Dcombine.enabled")
-			vmArg("-Dcombine.targets=net.minecraft.client.Minecraft;com.mojang.authlib.minecraft.client.MinecraftClient;net.fabricmc.loader.api.FabricLoader")
+			vmArg("-Dcombine.targets=net.minecraft.client.Minecraft;com.mojang.authlib.minecraft.client.MinecraftClient;net.fabricmc.loader.impl.launch.knot.Knot")
 			vmArg("-Dcombine.output=../docs")
 			ideConfigGenerated(true)
 		}

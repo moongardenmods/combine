@@ -19,6 +19,7 @@ public class ClassLuaElement {
 
     private final String fullName;
     private final String name;
+    private final Access access;
     private final EClass<?> superClass;
     private final String packagePath;
 
@@ -28,17 +29,19 @@ public class ClassLuaElement {
     public ClassLuaElement(EClass<?> clazz) {
         fullName = clazz.name();
         name = getName(clazz);
+        access = Access.getAccess(clazz);
         superClass = clazz.superclass();
         packagePath = clazz.packageName().replace(".", "/");
         classMethods = new ArrayList<>();
         instanceMethods = new ArrayList<>();
         classFields = new ArrayList<>();
         instanceFields = new ArrayList<>();
-        constructors = clazz.constructors().stream().filter(ModifierHolder::isPublic).map(ConstructorLuaElement::new).toList();
-        clazz.declaredMethods().stream().filter(ModifierHolder::isPublic).forEach((m) -> (m.isStatic() ? classMethods : instanceMethods).add(new MethodLuaElement(m)));
-        clazz.declaredFields().stream().filter(ModifierHolder::isPublic).forEach((f) -> (f.isStatic() ? classFields : instanceFields).add(new FieldLuaElement(f)));
+        constructors = clazz.constructors().stream().map(ConstructorLuaElement::new).toList();
+        clazz.declaredMethods().forEach((m) -> (m.isStatic() ? classMethods : instanceMethods).add(new MethodLuaElement(m)));
+        clazz.declaredFields().forEach((f) -> (f.isStatic() ? classFields : instanceFields).add(new FieldLuaElement(f)));
 
         Combine.makeVisible(clazz.superclass());
+        clazz.typeVariableValues().forEach((t) -> Combine.makeVisible(t.upperBound()));
     }
 
     public void write(Path p) throws IOException {
@@ -50,7 +53,7 @@ public class ClassLuaElement {
         } else {
             builder.append(getName(superClass));
         }
-        builder.append("\n");
+        builder.append("\n").append("--- ").append(access.type()).append("\n");
         instanceFields.forEach((f) -> f.build(builder));
         builder.append("local ").append(name).append(" = {}\n\n");
         instanceMethods.forEach((m) -> m.build(builder));

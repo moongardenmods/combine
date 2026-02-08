@@ -15,6 +15,8 @@ public class ParameterLuaElement {
         this.param = param;
         this.type = valueName(param.rawParameterType());
         Combine.makeVisible(param.rawParameterType());
+
+        param.parameterType().upperBound().typeVariableValues().forEach((t) -> Combine.makeVisible(t.upperBound()));
     }
 
     public void inConstructor(StringBuilder builder) {
