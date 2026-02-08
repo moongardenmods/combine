@@ -31,6 +31,7 @@ public class MethodLuaElement extends AbstractExecutableLuaElement {
 
     @Override
     public void build(StringBuilder builder) {
+        if (!Combine.IGNORE_ACCESS && access != Access.PUBLIC) return;
         builder.append("--- @").append(access.type()).append("\n");
         for (ParameterLuaElement parameter : parameters) {
             parameter.inMethodDoc(builder);

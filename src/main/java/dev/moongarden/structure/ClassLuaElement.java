@@ -2,7 +2,6 @@ package dev.moongarden.structure;
 
 import dev.moongarden.Combine;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
-import me.basiqueevangelist.enhancedreflection.api.ModifierHolder;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -48,9 +47,12 @@ public class ClassLuaElement {
         clazz.typeVariableValues().forEach((t) -> Combine.makeVisible(t.upperBound()));
     }
 
-    public void write(Path p) throws IOException {
+    public Path resolve(Path p) {
+        return p.resolve(packagePath, name + ".lua");
+    }
+
+    public void build(StringBuilder builder) {
         // Instance documentation
-        StringBuilder builder = new StringBuilder();
         builder.append("--- @meta ").append(fullName).append("\n--- @class ").append(name).append(": ");
         if (superClass == null) {
             builder.append("InstanceUserdata");
@@ -76,12 +78,6 @@ public class ClassLuaElement {
         builder.append("local ").append(name).append("Class = {}\n\n");
         classMethods.forEach((m) -> m.build(builder));
         builder.append("\nreturn ").append(name).append("Class\n");
-
-        // Save to file
-        Path dir = p.resolve(packagePath);
-        Files.createDirectories(dir);
-        Path save = dir.resolve(name + ".lua");
-        Files.writeString(save, builder);
     }
 
     public static String getName(EClass<?> clazz) {

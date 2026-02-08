@@ -1,5 +1,6 @@
 package dev.moongarden.structure;
 
+import dev.moongarden.Combine;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EConstructor;
 
@@ -19,6 +20,7 @@ public class ConstructorLuaElement extends AbstractExecutableLuaElement {
 
     @Override
     public void build(StringBuilder builder) {
+        if (!Combine.IGNORE_ACCESS && access != Access.PUBLIC) return;
         builder.append("--- @overload fun(");
         if (!parameters.isEmpty()) {
             ParameterLuaElement last = parameters.getLast();
