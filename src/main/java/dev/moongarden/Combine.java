@@ -59,32 +59,6 @@ public class Combine {
 		}
 		Path base = FabricLoader.getInstance().getGameDir().resolve(OUTPUT);
 		try {
-			if (Files.exists(base)) {
-				LOGGER.info("Clearing docs directory, this may take a while...");
-				Files.walkFileTree(base, new FileVisitor<>() {
-					@Override
-					public @NonNull FileVisitResult preVisitDirectory(Path dir, @NonNull BasicFileAttributes attrs) {
-						return FileVisitResult.CONTINUE;
-					}
-
-					@Override
-					public @NonNull FileVisitResult visitFile(Path file, @NonNull BasicFileAttributes attrs) throws IOException {
-						Files.delete(file);
-						return FileVisitResult.CONTINUE;
-					}
-
-					@Override
-					public @NonNull FileVisitResult visitFileFailed(Path file, @NonNull IOException exc) {
-						return FileVisitResult.CONTINUE;
-					}
-
-					@Override
-					public @NonNull FileVisitResult postVisitDirectory(Path dir, @Nullable IOException exc) throws IOException {
-						Files.delete(dir);
-						return FileVisitResult.CONTINUE;
-					}
-				});
-			}
 			Files.createDirectories(base);
             for (int i = 0; i < VISIBLE.size(); i++) {
 				EClass<?> clazz = VISIBLE.get(i);
