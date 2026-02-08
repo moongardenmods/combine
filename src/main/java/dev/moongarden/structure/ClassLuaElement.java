@@ -21,9 +21,9 @@ public class ClassLuaElement {
     private final String name;
     private final Access access;
     private final EClass<?> superClass;
+    private final List<EClass<?>> interfaces;
     private final String packagePath;
 
-    // TODO: Handle interfaces
     // TODO: Handle annotations (@LuaWrapped)
 
     public ClassLuaElement(EClass<?> clazz) {
@@ -32,6 +32,9 @@ public class ClassLuaElement {
         access = Access.getAccess(clazz);
         superClass = clazz.superclass();
         packagePath = clazz.packageName().replace(".", "/");
+        //noinspection unchecked
+        interfaces = (List<EClass<?>>) clazz.interfaces();
+
         classMethods = new ArrayList<>();
         instanceMethods = new ArrayList<>();
         classFields = new ArrayList<>();
@@ -39,6 +42,7 @@ public class ClassLuaElement {
         constructors = clazz.constructors().stream().map(ConstructorLuaElement::new).toList();
         clazz.declaredMethods().forEach((m) -> (m.isStatic() ? classMethods : instanceMethods).add(new MethodLuaElement(m)));
         clazz.declaredFields().forEach((f) -> (f.isStatic() ? classFields : instanceFields).add(new FieldLuaElement(f)));
+        interfaces.forEach(Combine::makeVisible);
 
         Combine.makeVisible(clazz.superclass());
         clazz.typeVariableValues().forEach((t) -> Combine.makeVisible(t.upperBound()));
@@ -53,6 +57,7 @@ public class ClassLuaElement {
         } else {
             builder.append(getName(superClass));
         }
+        interfaces.forEach((i) -> builder.append(", ").append(getName(i)));
         builder.append("\n").append("--- ").append(access.type()).append("\n");
         instanceFields.forEach((f) -> f.build(builder));
         builder.append("local ").append(name).append(" = {}\n\n");
@@ -79,7 +84,12 @@ public class ClassLuaElement {
     }
 
     public static String getName(EClass<?> clazz) {
-        return clazz.name().replace(clazz.packageName() + ".", "").replace('$', '_');
+        EClass<?> component = clazz.arrayComponent();
+        if (component != null) {
+            return getName(component) + "[]";
+        } else {
+            return clazz.name().replace(clazz.packageName() + ".", "").replace('$', '_');
+        }
     }
 
     public static ClassLuaElement from(EClass<?> clazz) {

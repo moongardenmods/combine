@@ -30,6 +30,11 @@ public class FieldLuaElement implements LuaElement {
 
     @Override
     public void build(StringBuilder builder) {
-        builder.append("--- @field ").append(access.type()).append(" ").append(name).append(" ").append(ClassLuaElement.getName(type.upperBound())).append("\n");
+        ParameterLuaElement.ValueDetails value = ParameterLuaElement.valueName(type.upperBound());
+        builder.append("--- @field ").append(access.type()).append(" ").append(name).append(" ").append(value.type());
+        if (value.details() != null) {
+            builder.append(" ").append(value.details());
+        }
+        builder.append("\n");
     }
 }
