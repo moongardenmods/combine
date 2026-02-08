@@ -73,8 +73,9 @@ public class ClassLuaElement {
         builder.append("\n");
         classFields.forEach((f) -> f.build(builder));
         constructors.forEach((c) -> c.build(builder));
-        builder.append("local ").append(name).append("Class = {}\n\nreturn ").append(name).append("Class\n");
+        builder.append("local ").append(name).append("Class = {}\n\n");
         classMethods.forEach((m) -> m.build(builder));
+        builder.append("\nreturn ").append(name).append("Class\n");
 
         // Save to file
         Path dir = p.resolve(packagePath);
