@@ -2,7 +2,6 @@ package dev.moongarden;
 
 import dev.moongarden.structure.ClassLuaElement;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
-import me.basiqueevangelist.enhancedreflection.impl.GenericEClassImpl;
 import net.fabricmc.loader.api.FabricLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,21 +27,21 @@ public class Combine {
 	private static final List<EClass<?>> VISIBLE = new ArrayList<>();
 
 	public static void makeVisible(EClass<?> clazz) {
-		if (
-				clazz != null && !VISIBLE.contains(clazz) && !clazz.raw().isPrimitive() &&
-				!clazz.raw().isArray()
-		) {
-			if (clazz instanceof GenericEClassImpl<?> genericEClass) {
-				genericEClass.typeVariableValues().forEach((type) -> {
-					if (type.upperBound().equals(genericEClass)) return;
+		if (clazz != null && !clazz.raw().isPrimitive()) {
+			if (clazz.raw().isArray()) {
+				makeVisible(clazz.arrayComponent());
+				return;
+			}
+			EClass<?> stripped = EClass.fromJava(clazz.raw());
+			if (!VISIBLE.contains(stripped)) {
+				clazz.typeVariableValues().forEach((type) -> {
+					if (type.upperBound().equals(clazz)) return;
 					makeVisible(type.lowerBound());
-					if (!type.lowerBound().equals(type.upperBound()) && !type.lowerBound().equals(genericEClass)) {
+					if (!type.lowerBound().equals(type.upperBound()) && !type.lowerBound().equals(clazz)) {
 						makeVisible(type.upperBound());
 					}
 				});
-				makeVisible(EClass.fromJava(genericEClass.raw()));
-			} else {
-				VISIBLE.add(clazz);
+				VISIBLE.add(stripped);
 			}
 		}
 	}
@@ -63,22 +62,16 @@ public class Combine {
 		AtomicBoolean done = new AtomicBoolean(false);
 		Queue<ClassLuaElement> elementQueue = new ConcurrentLinkedQueue<>();
 		final AtomicInteger size = new AtomicInteger(0);
+		final AtomicInteger parsed = new AtomicInteger(0);
 		new Thread(() -> {
-			long lastMillis = 0;
 			for (int i = 0; i < VISIBLE.size(); i++) {
 				EClass<?> clazz = VISIBLE.get(i);
-				long now = System.currentTimeMillis();
-				if (now % 1000 == 0 && now != lastMillis) {
-					LOGGER.info("{}/{} classes parsed.", i, VISIBLE.size());
-					lastMillis = now;
-				}
-				if (VISIBLE.size() % 100 == 0) size.set(VISIBLE.size());
+				parsed.set(i+1);
+				size.set(VISIBLE.size());
 				elementQueue.add(ClassLuaElement.from(clazz));
 			}
 			size.set(VISIBLE.size());
 			done.set(true);
-			VISIBLE.clear();
-			LOGGER.info("Parsing Complete.");
 		}).start();
 		int i = 0;
 		long lastMillis = 0;
@@ -95,13 +88,14 @@ public class Combine {
 					throw new RuntimeException(e);
 				}
 				long now = System.currentTimeMillis();
-				if (now % 1000 == 0  && now != lastMillis) {
-					LOGGER.info("{}/{} classes written.", i, size.get());
+				if (now >= lastMillis+2000) {
+					LOGGER.info("{} classes discovered | {} classes parsed | {} classes written", size.get(), parsed.get(), i);
 					lastMillis = now;
 				}
 				i++;
 			}
 		}
-		LOGGER.info("Writing Complete.");
+		LOGGER.info("{} classes discovered | {} classes parsed | {} classes written", size.get(), parsed.get(), i);
+		LOGGER.info("Documentation generation complete.");
 	}
 }

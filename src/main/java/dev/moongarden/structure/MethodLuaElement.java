@@ -5,12 +5,10 @@ import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
 import me.basiqueevangelist.enhancedreflection.api.typeuse.ETypeUse;
 
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class MethodLuaElement extends AbstractExecutableLuaElement {
-    private static final Set<String> keywords = HashSet.newHashSet(14);
+    private static final Set<String> keywords;
 
     private final ETypeUse returnType;
     private final String name;
@@ -70,9 +68,10 @@ public class MethodLuaElement extends AbstractExecutableLuaElement {
     }
 
     static {
-        keywords.add("and"); keywords.add("do"); keywords.add("elseif"); keywords.add("end");
-        keywords.add("false"); keywords.add("function"); keywords.add("in"); keywords.add("local");
-        keywords.add("nil"); keywords.add("not"); keywords.add("or"); keywords.add("repeat");
-        keywords.add("then"); keywords.add("until");
+
+        keywords = Set.of(
+                "and", "elseif", "end", "function", "in", "local",
+                "nil", "not", "or", "repeat", "then", "until"
+        );
     }
 }
