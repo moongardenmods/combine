@@ -1,5 +1,8 @@
 plugins {
 	`maven-publish`
+
+	// NOTE: Loom is only brought in for testing functionality against the minecraft classpath.
+	// It *really* is not necessary for this project.
 	id("net.fabricmc.fabric-loom") version "1.15-SNAPSHOT"
 }
 
@@ -20,27 +23,12 @@ repositories {
 }
 
 loom {
-	mods {
-		register(project.name) {
-			sourceSet(sourceSets["main"])
-		}
-	}
-
 	runs {
-		register("genLuaSources") {
-			client()
-			vmArg("-Dcombine.enabled")
-			vmArg("-Dcombine.targets=net.minecraft.client.Minecraft;com.mojang.authlib.minecraft.client.MinecraftClient;net.fabricmc.loader.impl.launch.knot.Knot")
-			vmArg("-Dcombine.output=../docs")
+		named("client") {
 			ideConfigGenerated(false)
 		}
 
-		register("genAllLuaSources") {
-			client()
-			vmArg("-Dcombine.enabled")
-			vmArg("-Dcombine.targets=net.minecraft.client.Minecraft;com.mojang.authlib.minecraft.client.MinecraftClient;net.fabricmc.loader.impl.launch.knot.Knot")
-			vmArg("-Dcombine.output=../docs")
-			vmArg("-Dcombine.ignoreAccess")
+		named("server") {
 			ideConfigGenerated(false)
 		}
 	}
@@ -70,6 +58,31 @@ tasks {
 		from("LICENSE") {
 			rename { "${it}_${project.properties["id"].toString()}"}
 		}
+	}
+
+	runClient {
+		enabled = false
+	}
+
+	runServer {
+		enabled = false
+	}
+
+	register<JavaExec>("genLuaSources") {
+		group = "fabric"
+
+		classpath = sourceSets["main"].runtimeClasspath
+		mainClass = "dev.moongarden.combine.Combine"
+		args = listOf("-Dcombine.output=../docs")
+		workingDir = file("run")
+	}
+
+	register<JavaExec>("genLuaSourcesAll") {
+		group = "fabric"
+
+		classpath = sourceSets["main"].runtimeClasspath
+		mainClass = "dev.moongarden.combine.Combine"
+		args = listOf("-Dcombine.output=../docs", "-Dcombine.ignoreAccess")
 	}
 }
 
