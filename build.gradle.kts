@@ -38,7 +38,7 @@ dependencies {
 	// To change the versions see the gradle.properties file
 	minecraft("com.mojang:minecraft:${project.properties["minecraft_version"]}")
 	implementation("net.fabricmc:fabric-loader:${project.properties["loader_version"]}")
-	implementation(include("me.basiqueevangelist:enhanced-reflection:${project.properties["enhanced_reflection_version"]}")!!)
+	implementation("me.basiqueevangelist:enhanced-reflection:${project.properties["enhanced_reflection_version"]}")
 }
 
 tasks {
