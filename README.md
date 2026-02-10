@@ -4,7 +4,7 @@ Lua Stub Documentation Generator for Java. Primarily used in [allium-example-scr
 
 ## Setup
 
-This setup assumes you're using the `loom` plugin. If not, some slight reconfiguration of these run configs and
+This setup assumes you're using the [`fabric-loom`](https://github.com/FabricMC/fabric-loom/) plugin. If not, some slight reconfiguration of these run configs and
 their arguments may be necessary.
 
 After bringing it in as a dependency add the following to your `build.gradle.kts`:
