@@ -43,8 +43,8 @@ public class ParameterLuaElement {
         types.put(int.class, "\\-2^31 to 2^31-1 OR 0 to 2^32-1");
         types.put(long.class, "\\-2^63 to 2^63-1 OR 0 to 2^64-1");
         types.put(float.class, "Single-precision 32-bit IEEE 754 floating point");
-        types.put(double.class, "Double-precision 64-bit IEEE 754 floating point.");
-        types.put(char.class, "A string with a single character.");
+        types.put(double.class, "Double-precision 64-bit IEEE 754 floating point");
+        types.put(char.class, "String with a single character OR 0 to 255");
     }
 
     public record ValueDetails(String type, String details) {
