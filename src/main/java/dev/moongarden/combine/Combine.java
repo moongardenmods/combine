@@ -79,7 +79,7 @@ public class Combine {
 							classQueue.add(parser);
 							parsed.incrementAndGet();
 							long now = System.currentTimeMillis();
-							if (now >= lastMillis.addAndGet(2000)) {
+							if (now >= lastMillis.get() + 2000) {
 								LOGGER.info("{} classes parsed", parsed.get());
 								lastMillis.set(now);
 							}
@@ -91,6 +91,8 @@ public class Combine {
 				throw new RuntimeException(e);
 			}
 		}
+		LOGGER.info("{} classes parsed", parsed.get());
+
 		// Write Lua files out to output directory
 		int i = 0;
 		while (!classQueue.isEmpty()) {
@@ -106,14 +108,16 @@ public class Combine {
 					throw new RuntimeException(e);
 				}
 				long now = System.currentTimeMillis();
-				if (now >= lastMillis.addAndGet(2000)) {
-					LOGGER.info(" {} files written", i);
+				if (now >= lastMillis.get() + 2000) {
+					LOGGER.info("{} files written", i);
 					lastMillis.set(now);
 				}
 				i++;
 			}
 		}
 		LOGGER.info("{} classes parsed | {} files written", parsed.get(), i);
+
+		// Responsibly close all filesystems that should be closed
 		for (FileSystem filesystem : FILESYSTEMS) {
 			if (!filesystem.isReadOnly()) {
 				try {
@@ -123,6 +127,7 @@ public class Combine {
 				}
 			}
         }
+
 		LOGGER.info("Documentation generation complete.");
 	}
 }

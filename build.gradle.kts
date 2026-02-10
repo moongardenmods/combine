@@ -73,7 +73,7 @@ tasks {
 
 		classpath = sourceSets["main"].runtimeClasspath
 		mainClass = "dev.moongarden.combine.Combine"
-		args = listOf("-Dcombine.output=../docs")
+		jvmArgs = listOf("-Dcombine.output=../docs")
 		workingDir = file("run")
 	}
 
@@ -82,7 +82,8 @@ tasks {
 
 		classpath = sourceSets["main"].runtimeClasspath
 		mainClass = "dev.moongarden.combine.Combine"
-		args = listOf("-Dcombine.output=../docs", "-Dcombine.ignoreAccess")
+		jvmArgs = listOf("-Dcombine.output=../docs", "-Dcombine.ignoreAccess")
+		workingDir = file("run")
 	}
 }
 
