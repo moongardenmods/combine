@@ -9,7 +9,7 @@ their arguments may be necessary.
 
 After bringing it in as a dependency add the following to your `build.gradle.kts`:
 ```kotlin
-	register<JavaExec>("genLuaSources") {
+register<JavaExec>("genLuaSources") {
     group = "fabric"
 
     classpath = sourceSets["main"].runtimeClasspath
