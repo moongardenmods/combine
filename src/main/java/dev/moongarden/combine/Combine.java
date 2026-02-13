@@ -89,7 +89,7 @@ public class Combine {
 				throw new RuntimeException(e);
 			}
 		}
-		System.out.format("INFO:  %d classes parsed\n", parsed.get());
+		System.out.format("INFO: %d classes parsed\n", parsed.get());
 
 		// Write Lua files out to output directory
 		int i = 0;
@@ -107,13 +107,13 @@ public class Combine {
 				}
 				long now = System.currentTimeMillis();
 				if (now >= lastMillis.get() + 2000) {
-					System.out.format("INFO:  %d files written\n", parsed.get());
+					System.out.format("INFO: %d files written\n", parsed.get());
 					lastMillis.set(now);
 				}
 				i++;
 			}
 		}
-		System.out.format("INFO:  %d classes parsed | %d files written\n", parsed.get(), i);
+		System.out.format("INFO: %d classes parsed | %d files written\n", parsed.get(), i);
 
 		// Responsibly close all filesystems that should be closed
 		for (FileSystem filesystem : FILESYSTEMS) {
