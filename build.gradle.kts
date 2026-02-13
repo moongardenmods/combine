@@ -1,9 +1,6 @@
 plugins {
 	`maven-publish`
-
-	// NOTE: Loom is only brought in for testing functionality against the minecraft classpath.
-	// It *really* is not necessary for this project.
-	id("net.fabricmc.fabric-loom") version "1.15-SNAPSHOT"
+	id("java")
 }
 
 version = properties["version"].toString()
@@ -15,28 +12,35 @@ base {
 }
 
 repositories {
+	maven("https://piston-maven.hugeblank.dev/")
+	maven("https://maven.fabricmc.net/") {
+		content {
+			includeGroup("net.fabricmc")
+		}
+	}
 	maven("https://basique.top/maven/releases") {
 		content {
 			includeGroup("me.basiqueevangelist")
 		}
 	}
+	mavenCentral()
 }
 
-loom {
-	runs {
-		named("client") {
-			ideConfigGenerated(false)
-		}
+configurations {
+	register("localRuntime") {
+		isCanBeResolved = true
+		isCanBeConsumed = false
+	}
 
-		named("server") {
-			ideConfigGenerated(false)
-		}
+	getByName("runtimeClasspath") {
+		extendsFrom(getByName("localRuntime"))
 	}
 }
 
 dependencies {
-	// To change the versions see the gradle.properties file
-	minecraft("com.mojang:minecraft:${project.properties["minecraft_version"]}")
+	add("localRuntime", "net.minecraft:client:${project.properties["minecraft_version"]}")
+	implementation("org.jspecify:jspecify:${project.properties["jspecify_version"]}")
+	implementation("org.ow2.asm:asm:${project.properties["asm_version"]}")
 	implementation("net.fabricmc:fabric-loader:${project.properties["loader_version"]}")
 	implementation("me.basiqueevangelist:enhanced-reflection:${project.properties["enhanced_reflection_version"]}")
 }
@@ -60,16 +64,8 @@ tasks {
 		}
 	}
 
-	runClient {
-		enabled = false
-	}
-
-	runServer {
-		enabled = false
-	}
-
 	register<JavaExec>("genLuaSources") {
-		group = "fabric"
+		group = "allium"
 
 		classpath = sourceSets["main"].runtimeClasspath
 		mainClass = "dev.moongarden.combine.Combine"
@@ -78,7 +74,7 @@ tasks {
 	}
 
 	register<JavaExec>("genLuaSourcesAll") {
-		group = "fabric"
+		group = "allium"
 
 		classpath = sourceSets["main"].runtimeClasspath
 		mainClass = "dev.moongarden.combine.Combine"
@@ -100,7 +96,7 @@ publishing {
 		register("mavenJava", MavenPublication::class) {
 			from(components["java"])
 			groupId = group.toString()
-			artifactId = base.archivesName.get()
+			artifactId = project.properties["id"].toString()
 			version = project.version.toString()
 		}
 	}

@@ -3,8 +3,6 @@ package dev.moongarden.combine;
 import dev.moongarden.combine.parser.ClassParser;
 import org.jspecify.annotations.NonNull;
 import org.objectweb.asm.ClassReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -15,7 +13,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class Combine {
-	public static final Logger LOGGER = LoggerFactory.getLogger("Combine");
 	public static final boolean IGNORE_ACCESS = System.getProperty("combine.ignore_access") != null;
 	public static final String OUTPUT = Optional.ofNullable(System.getProperty("combine.output")).orElse("./docs");
 
@@ -41,13 +38,14 @@ public class Combine {
 		for (String s : classPathString.split(":")) {
 			Path jar = Path.of(s);
 			if (!Files.exists(jar)) {
-                LOGGER.warn("Location {} on classpath does not exist", jar);
+				System.out.format("WARN: Location %s on classpath does not exist\n", jar);
 				continue;
 			}
 			if (Files.isDirectory(jar)) {
 				JARS.add(jar);
 			} else {
 				try {
+					System.out.println(jar);
 					FileSystem fs = FileSystems.newFileSystem(jar);
 					JARS.add(fs.getPath("/"));
 					FILESYSTEMS.add(fs);
@@ -80,7 +78,7 @@ public class Combine {
 							parsed.incrementAndGet();
 							long now = System.currentTimeMillis();
 							if (now >= lastMillis.get() + 2000) {
-								LOGGER.info("{} classes parsed", parsed.get());
+								System.out.format("INFO: %d classes parsed\n", parsed.get());
 								lastMillis.set(now);
 							}
 						}
@@ -91,7 +89,7 @@ public class Combine {
 				throw new RuntimeException(e);
 			}
 		}
-		LOGGER.info("{} classes parsed", parsed.get());
+		System.out.format("INFO:  %d classes parsed\n", parsed.get());
 
 		// Write Lua files out to output directory
 		int i = 0;
@@ -109,13 +107,13 @@ public class Combine {
 				}
 				long now = System.currentTimeMillis();
 				if (now >= lastMillis.get() + 2000) {
-					LOGGER.info("{} files written", i);
+					System.out.format("INFO:  %d files written\n", parsed.get());
 					lastMillis.set(now);
 				}
 				i++;
 			}
 		}
-		LOGGER.info("{} classes parsed | {} files written", parsed.get(), i);
+		System.out.format("INFO:  %d classes parsed | %d files written\n", parsed.get(), i);
 
 		// Responsibly close all filesystems that should be closed
 		for (FileSystem filesystem : FILESYSTEMS) {
@@ -128,6 +126,6 @@ public class Combine {
 			}
         }
 
-		LOGGER.info("Documentation generation complete.");
+		System.out.println("INFO: Documentation generation complete.");
 	}
 }

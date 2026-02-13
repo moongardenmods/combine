@@ -10,7 +10,7 @@ their arguments may be necessary.
 After bringing it in as a dependency add the following to your `build.gradle.kts`:
 ```kotlin
 register<JavaExec>("genLuaSources") {
-    group = "fabric"
+    group = "allium"
 
     classpath = sourceSets["main"].runtimeClasspath
     mainClass = "dev.moongarden.combine.Combine"
@@ -19,7 +19,7 @@ register<JavaExec>("genLuaSources") {
 }
 
 register<JavaExec>("genLuaSourcesAll") {
-    group = "fabric"
+    group = "allium"
 
     classpath = sourceSets["main"].runtimeClasspath
     mainClass = "dev.moongarden.combine.Combine"
