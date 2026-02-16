@@ -39,10 +39,10 @@ configurations {
 
 dependencies {
 	add("localRuntime", "net.minecraft:client:${project.properties["minecraft_version"]}")
+	add("localRuntime", "net.fabricmc:fabric-loader:${project.properties["loader_version"]}")
+
 	implementation("org.jspecify:jspecify:${project.properties["jspecify_version"]}")
 	implementation("org.ow2.asm:asm:${project.properties["asm_version"]}")
-	implementation("net.fabricmc:fabric-loader:${project.properties["loader_version"]}")
-	implementation("me.basiqueevangelist:enhanced-reflection:${project.properties["enhanced_reflection_version"]}")
 }
 
 tasks {
