@@ -70,7 +70,6 @@ public class Combine {
 				JARS.add(jar);
 			} else {
 				try {
-					System.out.println(jar);
 					FileSystem fs = FileSystems.newFileSystem(jar);
 					JARS.add(fs.getPath("/"));
 					FILESYSTEMS.add(fs);
@@ -98,7 +97,7 @@ public class Combine {
 						String name = file.getFileName().toString();
 						if (name.endsWith(".class") && !(name.equals("module-info.class") || name.equals("package-info.class"))) {
 							ClassParser parser = new ClassParser();
-							new ClassReader(Files.newInputStream(file)).accept(parser, ClassReader.SKIP_CODE);
+							new ClassReader(Files.newInputStream(file)).accept(parser, 0);
 							classQueue.add(parser);
 							parsed.incrementAndGet();
 							long now = System.currentTimeMillis();
