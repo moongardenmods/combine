@@ -132,7 +132,7 @@ public class Combine {
 				}
 				long now = System.currentTimeMillis();
 				if (now >= lastMillis.get() + 2000) {
-					System.out.format("INFO: %d files written\n", parsed.get());
+					System.out.format("INFO: %d files written\n", i);
 					lastMillis.set(now);
 				}
 				i++;

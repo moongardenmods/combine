@@ -19,9 +19,9 @@ public class FieldParser extends FieldVisitor implements NamedWritable {
     private final String signature;
     private final Object value;
     private final Function<ClassParser.MemberType, Consumer<FieldParser>> finish;
-    private final List<FieldParserExtension> extensionVisitor;
+    private final List<FieldParserExtension> extensionVisitors;
 
-    public FieldParser(Type parent, int access, String name, String descriptor, String signature, Object value, Function<ClassParser.MemberType, Consumer<FieldParser>> finish, Set<Type> imports, List<FieldParserExtension> extensionVisitor) {
+    public FieldParser(Type parent, int access, String name, String descriptor, String signature, Object value, Function<ClassParser.MemberType, Consumer<FieldParser>> finish, Set<Type> imports, List<FieldParserExtension> extensionVisitors) {
         super(Opcodes.ASM9);
         this.parent = parent;
         this.access = access;
@@ -31,13 +31,13 @@ public class FieldParser extends FieldVisitor implements NamedWritable {
         this.signature = signature;
         this.value = value;
         this.finish = finish;
-        this.extensionVisitor = extensionVisitor;
+        this.extensionVisitors = extensionVisitors;
     }
 
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
         return new AnnotationParser(
-                extensionVisitor.stream()
+                extensionVisitors.stream()
                         .map((e) -> e.visitAnnotation(descriptor, visible))
                         .filter(Objects::nonNull)
                         .toList()
@@ -47,7 +47,7 @@ public class FieldParser extends FieldVisitor implements NamedWritable {
     @Override
     public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible) {
         return new AnnotationParser(
-                extensionVisitor.stream()
+                extensionVisitors.stream()
                         .map((e) -> e.visitTypeAnnotation(typeRef, typePath, descriptor, visible))
                         .filter(Objects::nonNull)
                         .toList()
@@ -56,13 +56,13 @@ public class FieldParser extends FieldVisitor implements NamedWritable {
 
     @Override
     public void visitAttribute(Attribute attribute) {
-        extensionVisitor.forEach((e) -> e.visitAttribute(attribute));
+        extensionVisitors.forEach((e) -> e.visitAttribute(attribute));
     }
 
     @Override
     public void visitEnd() {
-        extensionVisitor.forEach(FieldParserExtension::visitEnd);
-        if (extensionVisitor.stream().map(FieldParserExtension::shouldWriteField).reduce(true, Boolean::logicalAnd)) {
+        extensionVisitors.forEach(FieldParserExtension::visitEnd);
+        if (extensionVisitors.stream().map(FieldParserExtension::shouldWriteField).reduce(true, Boolean::logicalAnd)) {
             if ((access & Opcodes.ACC_STATIC) == 0) {
                 finish.apply(ClassParser.MemberType.INSTANCE).accept(this);
             } else {
@@ -73,9 +73,12 @@ public class FieldParser extends FieldVisitor implements NamedWritable {
 
     @Override
     public void write(ClassParser parser, StringBuilder builder) {
-        builder.append("--- @field ").append(ClassParser.accessName(access)).append(" ").append(
-                parser.hasMemberNamed(this) || ClassParser.KEYWORDS.contains(name) ? "m_" + name : name
-        ).append(" ").append(ClassParser.instanceTypeDoc(descriptor)).append("\n");
+        builder.append("--- @field ").append(ClassParser.accessName(access)).append(" ");
+        String identity = parser.hasMemberNamed(this) || ClassParser.KEYWORDS.contains(name) ? "f_" + name : name;
+        for (FieldParserExtension extensionVisitor : extensionVisitors) {
+            identity = extensionVisitor.modifyFieldName(identity);
+        }
+        builder.append(identity).append(" ").append(ClassParser.instanceTypeDoc(descriptor)).append("\n");
     }
 
     @Override
