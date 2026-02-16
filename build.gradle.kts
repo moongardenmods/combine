@@ -32,7 +32,7 @@ configurations {
 		isCanBeConsumed = false
 	}
 
-	getByName("runtimeClasspath") {
+	runtimeClasspath {
 		extendsFrom(getByName("localRuntime"))
 	}
 }
