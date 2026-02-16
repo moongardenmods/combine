@@ -1,12 +1,10 @@
 package dev.moongarden.combine.parser;
 
 import dev.moongarden.combine.Combine;
+import dev.moongarden.combine.extension.api.*;
 import org.objectweb.asm.*;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -22,6 +20,10 @@ public class ClassParser extends ClassVisitor {
     private final List<NamedWritable> instanceFields = new ArrayList<>();
     private final List<NamedWritable> classMethods = new ArrayList<>();
     private final List<NamedWritable> classFields = new ArrayList<>();
+    private final List<ClassParserExtension> extensionVisitor = Combine.EXTENSIONS.stream()
+            .map(CombineExtension::createClassParser)
+            .filter(Objects::nonNull)
+            .toList();
 
     private Type classType;
     private Type superType;
@@ -34,6 +36,7 @@ public class ClassParser extends ClassVisitor {
 
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+        extensionVisitor.forEach((e) -> e.visit(version, access, name, signature, superName, interfaces));
         this.classType = Type.getType('L' + name + ';');
         if (superName != null) {
             this.superType = Type.getType('L' + superName + ';');
@@ -45,94 +48,121 @@ public class ClassParser extends ClassVisitor {
             imports.add(iface);
         }
         this.access = access;
-        super.visit(version, access, name, signature, superName, interfaces);
     }
 
     @Override
     public void visitSource(String source, String debug) {
-        super.visitSource(source, debug);
+        extensionVisitor.forEach((e) -> e.visitSource(source, debug));
     }
 
     @Override
     public ModuleVisitor visitModule(String name, int access, String version) {
+        extensionVisitor.forEach((e) -> e.visitModule(name, access, version));
         return super.visitModule(name, access, version);
     }
 
     @Override
     public void visitNestHost(String nestHost) {
-        super.visitNestHost(nestHost);
+        extensionVisitor.forEach((e) -> e.visitNestHost(nestHost));
     }
 
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-        return super.visitAnnotation(descriptor, visible);
+        return new AnnotationParser(
+                extensionVisitor.stream()
+                        .map((e) -> e.visitAnnotation(descriptor, visible))
+                        .filter(Objects::nonNull)
+                        .toList()
+        );
     }
 
     @Override
     public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible) {
-        return super.visitTypeAnnotation(typeRef, typePath, descriptor, visible);
+        return new AnnotationParser(
+                extensionVisitor.stream()
+                        .map((e) -> e.visitTypeAnnotation(typeRef, typePath, descriptor, visible))
+                        .filter(Objects::nonNull)
+                        .toList()
+        );
     }
 
     @Override
     public void visitAttribute(Attribute attribute) {
-        super.visitAttribute(attribute);
+        extensionVisitor.forEach((e) -> e.visitAttribute(attribute));
     }
 
     @Override
     public void visitPermittedSubclass(String permittedSubclass) {
-        super.visitPermittedSubclass(permittedSubclass);
+        extensionVisitor.forEach((e) -> e.visitPermittedSubclass(permittedSubclass));
     }
 
     @Override
     public void visitNestMember(String nestMember) {
-        super.visitNestMember(nestMember);
+        extensionVisitor.forEach((e) -> e.visitNestMember(nestMember));
     }
 
     @Override
     public void visitOuterClass(String owner, String name, String descriptor) {
-        super.visitOuterClass(owner, name, descriptor);
+        extensionVisitor.forEach((e) -> e.visitOuterClass(owner, name, descriptor));
     }
 
     @Override
     public void visitInnerClass(String name, String outerName, String innerName, int access) {
-        super.visitInnerClass(name, outerName, innerName, access);
+        extensionVisitor.forEach((e) -> e.visitInnerClass(name, outerName, innerName, access));
     }
 
     @Override
     public RecordComponentVisitor visitRecordComponent(String name, String descriptor, String signature) {
-        return super.visitRecordComponent(name, descriptor, signature);
+        extensionVisitor.forEach((e) -> e.visitRecordComponent(name, descriptor, signature));
+        return null;
     }
 
     @Override
     public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-        if ((access & Opcodes.ACC_PUBLIC) != 0 || Combine.IGNORE_ACCESS) {
+        if (((access & Opcodes.ACC_PUBLIC) != 0 || Combine.IGNORE_ACCESS) &&
+                extensionVisitor.stream()
+                        .map((e) -> e.shouldVisitField(access, name, descriptor, signature, value))
+                        .reduce(true, Boolean::logicalAnd)
+        ) {
             Function<MemberType, Consumer<FieldParser>> function = (type) -> switch (type) {
                 case STATIC -> classFields::add;
                 case INSTANCE -> instanceFields::add;
                 case CTOR -> null;
             };
-            return new FieldParser(classType, access, name, descriptor, signature, value, function, imports);
+            List<FieldParserExtension> fieldVisitor = extensionVisitor.stream()
+                    .map((e) -> e.visitField(access, name, descriptor, signature, value))
+                    .filter(Objects::nonNull)
+                    .toList();
+            return new FieldParser(classType, access, name, descriptor, signature, value, function, imports, fieldVisitor);
         }
-        return super.visitField(access, name, descriptor, signature, value);
+        return null;
     }
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-        if (((access & Opcodes.ACC_PUBLIC) != 0 || Combine.IGNORE_ACCESS) && !name.equals("<clinit>")) {
+        if (((access & Opcodes.ACC_PUBLIC) != 0 || Combine.IGNORE_ACCESS) && !name.equals("<clinit>") &&
+                extensionVisitor.stream()
+                        .map((e) -> e.shouldVisitMethod(access, name, descriptor, signature, exceptions))
+                        .reduce(true, Boolean::logicalAnd)
+        ) {
             Function<MemberType, Consumer<MethodParser>> function = (type) -> switch (type) {
                 case STATIC -> classMethods::add;
                 case INSTANCE -> instanceMethods::add;
                 case CTOR -> constructors::add;
             };
 
-            return new MethodParser(classType, access, name, descriptor, signature, exceptions, function, imports);
+            List<MethodParserExtension> methodVisitor = extensionVisitor.stream()
+                    .map((e) -> e.visitMethod(access, name, descriptor, signature, exceptions))
+                    .filter(Objects::nonNull)
+                    .toList();
+            return new MethodParser(classType, access, name, descriptor, signature, exceptions, function, imports, methodVisitor);
         }
-        return super.visitMethod(access, name, descriptor, signature, exceptions);
+        return null;
     }
 
     @Override
     public void visitEnd() {
-        super.visitEnd();
+        extensionVisitor.forEach(ClassParserExtension::visitEnd);
     }
 
     public void write(StringBuilder builder) {
@@ -150,6 +180,7 @@ public class ClassParser extends ClassVisitor {
         }
         interfaces.forEach((i) -> builder.append(", ").append(instanceTypeDoc(i)));
         builder.append("\n").append("--- ").append(accessName(access)).append("\n");
+        extensionVisitor.forEach((e) -> e.writeInInstance(builder));
         instanceFields.forEach((f) -> f.write(this, builder));
         builder.append("local ").append(instanceTypeDoc(classType)).append(" = {}\n\n");
         instanceMethods.forEach((m) -> m.write(this, builder));
@@ -162,6 +193,7 @@ public class ClassParser extends ClassVisitor {
             builder.append(classTypeDoc(superType));
         }
         builder.append("\n");
+        extensionVisitor.forEach((e) -> e.writeInClass(builder));
         classFields.forEach((f) -> f.write(this, builder));
         constructors.forEach((c) -> c.write(this, builder));
         builder.append("local ").append(classTypeDoc(classType)).append(" = {}\n\n");

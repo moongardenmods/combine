@@ -1,9 +1,11 @@
 package dev.moongarden.combine.parser;
 
+import dev.moongarden.combine.extension.api.FieldParserExtension;
 import org.objectweb.asm.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -17,8 +19,9 @@ public class FieldParser extends FieldVisitor implements NamedWritable {
     private final String signature;
     private final Object value;
     private final Function<ClassParser.MemberType, Consumer<FieldParser>> finish;
+    private final List<FieldParserExtension> extensionVisitor;
 
-    public FieldParser(Type parent, int access, String name, String descriptor, String signature, Object value, Function<ClassParser.MemberType, Consumer<FieldParser>> finish, Set<Type> imports) {
+    public FieldParser(Type parent, int access, String name, String descriptor, String signature, Object value, Function<ClassParser.MemberType, Consumer<FieldParser>> finish, Set<Type> imports, List<FieldParserExtension> extensionVisitor) {
         super(Opcodes.ASM9);
         this.parent = parent;
         this.access = access;
@@ -28,31 +31,44 @@ public class FieldParser extends FieldVisitor implements NamedWritable {
         this.signature = signature;
         this.value = value;
         this.finish = finish;
+        this.extensionVisitor = extensionVisitor;
     }
 
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-        return super.visitAnnotation(descriptor, visible);
+        return new AnnotationParser(
+                extensionVisitor.stream()
+                        .map((e) -> e.visitAnnotation(descriptor, visible))
+                        .filter(Objects::nonNull)
+                        .toList()
+        );
     }
 
     @Override
     public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible) {
-        return super.visitTypeAnnotation(typeRef, typePath, descriptor, visible);
+        return new AnnotationParser(
+                extensionVisitor.stream()
+                        .map((e) -> e.visitTypeAnnotation(typeRef, typePath, descriptor, visible))
+                        .filter(Objects::nonNull)
+                        .toList()
+        );
     }
 
     @Override
     public void visitAttribute(Attribute attribute) {
-        super.visitAttribute(attribute);
+        extensionVisitor.forEach((e) -> e.visitAttribute(attribute));
     }
 
     @Override
     public void visitEnd() {
-        if ((access & Opcodes.ACC_STATIC) == 0) {
-            finish.apply(ClassParser.MemberType.INSTANCE).accept(this);
-        } else {
-            finish.apply(ClassParser.MemberType.STATIC).accept(this);
+        extensionVisitor.forEach(FieldParserExtension::visitEnd);
+        if (extensionVisitor.stream().map(FieldParserExtension::shouldWriteField).reduce(true, Boolean::logicalAnd)) {
+            if ((access & Opcodes.ACC_STATIC) == 0) {
+                finish.apply(ClassParser.MemberType.INSTANCE).accept(this);
+            } else {
+                finish.apply(ClassParser.MemberType.STATIC).accept(this);
+            }
         }
-        super.visitEnd();
     }
 
     @Override

@@ -27,3 +27,15 @@ register<JavaExec>("genLuaSourcesAll") {
     workingDir = file("run")
 }
 ```
+
+### Extensions
+
+Combine supports extensions that can rename methods, fields, and can even disable documentation for them outright.
+Extension classes must implement the `CombineExtension` interface, providing a new ClassParserExtension every time the
+`createClassParser` method is invoked.
+
+To add extensions, supply the class reference path to `-Dcombine.extensions`. To add multiple, colon separate the class 
+references. Example:
+```
+-Dcombine.extensions=dev.moongarden.combine.TestExtensionOne:dev.moongarden.combine.TestExtensionTwo
+```

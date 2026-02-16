@@ -1,10 +1,12 @@
 package dev.moongarden.combine;
 
+import dev.moongarden.combine.extension.api.CombineExtension;
 import dev.moongarden.combine.parser.ClassParser;
 import org.jspecify.annotations.NonNull;
 import org.objectweb.asm.ClassReader;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -15,6 +17,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public class Combine {
 	public static final boolean IGNORE_ACCESS = System.getProperty("combine.ignore_access") != null;
 	public static final String OUTPUT = Optional.ofNullable(System.getProperty("combine.output")).orElse("./docs");
+	public static final String EXTENSION_CLASS_PATHS = System.getProperty("combine.extensions");
+	public static final List<CombineExtension> EXTENSIONS;
 
 	private static final List<Path> JARS = new ArrayList<>();
 	private static final List<FileSystem> FILESYSTEMS = new ArrayList<>();
@@ -23,7 +27,28 @@ public class Combine {
 		generate();
 	}
 
+	static {
+		List<CombineExtension> extensions = new ArrayList<>();
+		if (EXTENSION_CLASS_PATHS != null) {
+			for (String e : EXTENSION_CLASS_PATHS.split(":")) {
+				try {
+					Class<?> clazz = Combine.class.getClassLoader().loadClass(e);
+					if (CombineExtension.class.isAssignableFrom(clazz)) {
+						extensions.add((CombineExtension) clazz.getDeclaredConstructor().newInstance());
+					} else {
+						throw new RuntimeException("Class '" + e + "' must implement CombineExtension.");
+					}
+				} catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException |
+						 InstantiationException | InvocationTargetException ex) {
+					throw new RuntimeException(ex);
+				}
+			}
+		}
+		EXTENSIONS = Collections.unmodifiableList(extensions);
+	}
+
     public static void generate() {
+
 		{ // Find system libraries
 			FileSystem fs = FileSystems.getFileSystem(URI.create("jrt:/"));
 			JARS.add(fs.getPath("/"));

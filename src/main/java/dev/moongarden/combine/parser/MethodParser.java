@@ -1,11 +1,9 @@
 package dev.moongarden.combine.parser;
 
+import dev.moongarden.combine.extension.api.MethodParserExtension;
 import org.objectweb.asm.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -22,9 +20,10 @@ public class MethodParser extends MethodVisitor implements NamedWritable {
     private final String signature;
     private final String[] exceptions;
     private final Function<ClassParser.MemberType, Consumer<MethodParser>> finish;
+    private final List<MethodParserExtension> extensionVisitors;
 
 
-    public MethodParser(Type parent, int access, String name, String descriptor, String signature, String[] exceptions, Function<ClassParser.MemberType, Consumer<MethodParser>> finish, Set<Type> imports) {
+    public MethodParser(Type parent, int access, String name, String descriptor, String signature, String[] exceptions, Function<ClassParser.MemberType, Consumer<MethodParser>> finish, Set<Type> imports, List<MethodParserExtension> extensionVisitor) {
         super(Opcodes.ASM9);
         this.parent = parent;
         this.access = access;
@@ -37,46 +36,58 @@ public class MethodParser extends MethodVisitor implements NamedWritable {
         this.signature = signature;
         this.exceptions = exceptions;
         this.finish = finish;
+        this.extensionVisitors = extensionVisitor;
     }
 
     @Override
     public void visitParameter(String name, int access) {
+        extensionVisitors.forEach((e) -> e.visitParameter(name, access));
         parameterNames.add(name);
-        super.visitParameter(name, access);
     }
 
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-        return super.visitAnnotation(descriptor, visible);
+        return new AnnotationParser(extensionVisitors.stream()
+                .map((e) -> e.visitAnnotation(descriptor, visible))
+                .filter(Objects::nonNull)
+                .toList()
+        );
     }
 
     @Override
     public void visitAnnotableParameterCount(int parameterCount, boolean visible) {
-        super.visitAnnotableParameterCount(parameterCount, visible);
+        extensionVisitors.forEach((e) -> e.visitAnnotableParameterCount(parameterCount, visible));
     }
 
     @Override
     public AnnotationVisitor visitParameterAnnotation(int parameter, String descriptor, boolean visible) {
-        return super.visitParameterAnnotation(parameter, descriptor, visible);
+        return new AnnotationParser(
+                extensionVisitors.stream()
+                        .map((e) -> e.visitParameterAnnotation(parameter, descriptor, visible))
+                        .filter(Objects::nonNull)
+                        .toList()
+        );
     }
 
     @Override
     public void visitAttribute(Attribute attribute) {
-        super.visitAttribute(attribute);
+
     }
 
     @Override
     public void visitEnd() {
-        if (name.equals("<init>")) {
-            finish.apply(ClassParser.MemberType.CTOR).accept(this);
-        } else {
-            if ((access & Opcodes.ACC_STATIC) == 0) {
-                finish.apply(ClassParser.MemberType.INSTANCE).accept(this);
+        extensionVisitors.forEach(MethodParserExtension::visitEnd);
+        if (extensionVisitors.stream().map(MethodParserExtension::shouldWriteMethod).reduce(true, Boolean::logicalAnd)) {
+            if (name.equals("<init>")) {
+                finish.apply(ClassParser.MemberType.CTOR).accept(this);
             } else {
-                finish.apply(ClassParser.MemberType.STATIC).accept(this);
+                if ((access & Opcodes.ACC_STATIC) == 0) {
+                    finish.apply(ClassParser.MemberType.INSTANCE).accept(this);
+                } else {
+                    finish.apply(ClassParser.MemberType.STATIC).accept(this);
+                }
             }
         }
-        super.visitEnd();
     }
 
     @Override
@@ -112,7 +123,11 @@ public class MethodParser extends MethodVisitor implements NamedWritable {
                 } else {
                     builder.append(":");
                 }
-                builder.append(ClassParser.KEYWORDS.contains(name) ? "m_" + name : name);
+                String identity = ClassParser.KEYWORDS.contains(name) ? "m_" + name : name;
+                for (MethodParserExtension extensionVisitor : extensionVisitors) {
+                    identity = extensionVisitor.modifyMethodName(identity);
+                }
+                builder.append(identity);
             }
             builder.append("(");
             for (int i = 0; i < parameterTypes.length; i++) {
