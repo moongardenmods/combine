@@ -166,10 +166,10 @@ public class ClassParser extends ClassVisitor {
     }
 
     public void write(StringBuilder builder) {
-        builder.append("--- @meta ").append(classType.getClassName()).append("\n\n");
+        builder.append("--- @meta ").append(className(classType)).append("\n\n");
         for (Type type : imports) {
             if (type.getSort() == Type.OBJECT) {
-                builder.append("--- @module '").append(type.getClassName()).append("'\n");
+                builder.append("--- @module '").append(className(type)).append("'\n");
             }
         }
         builder.append("\n--- @class ").append(instanceTypeDoc(classType)).append(": ");
@@ -230,6 +230,10 @@ public class ClassParser extends ClassVisitor {
         } else {
             return "package";
         }
+    }
+
+    public static String className(Type type) {
+        return type.getClassName().replace('$', '.');
     }
 
     public static String instanceTypeDoc(Type classType) {
