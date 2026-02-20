@@ -172,7 +172,7 @@ public class ClassParser extends ClassVisitor {
                 builder.append("--- @module '").append(type.getClassName()).append("'\n");
             }
         }
-        builder.append("--- @class ").append(instanceTypeDoc(classType)).append(": ");
+        builder.append("\n--- @class ").append(instanceTypeDoc(classType)).append(": ");
         if (superType == null) {
             builder.append("InstanceUserdata");
         } else {
