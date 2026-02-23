@@ -8,7 +8,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class MethodParser extends MethodVisitor implements NamedWritable {
-    // TODO: Create annotation reader
     private final List<?> annotations = new ArrayList<>();
     private final List<String> parameterNames = new ArrayList<>();
 
@@ -107,7 +106,7 @@ public class MethodParser extends MethodVisitor implements NamedWritable {
             final int namesSize = parameterNames.size();
             for (int i = 0; i < typesSize; i++) {
                 if (!shouldWriteParams.get(i)) continue;
-                builder.append(namesSize-1 > i ? parameterNames.get(i) : "arg"+i).append(": ").append(parameterType(parameterTypes.get(i)));
+                builder.append(namesSize-1 > i ? parameterNames.get(i) : "arg"+i).append(": ").append(parameterType(i, parameterTypes.get(i)));
                 if (i != typesSize-1) builder.append(", ");
             }
             builder.append("): ").append(ClassParser.instanceTypeDoc(parent)).append(" ").append(ClassParser.accessName(access)).append("\n");
@@ -116,7 +115,7 @@ public class MethodParser extends MethodVisitor implements NamedWritable {
             for (int i = 0; i < typesSize; i++) {
                 if (!shouldWriteParams.get(i)) continue;
                 builder.append("--- @param ").append(parameterNames.size() > i ? parameterNames.get(i) : "arg"+i).append(" ")
-                        .append(parameterType(parameterTypes.get(i)));
+                        .append(parameterType(i, parameterTypes.get(i)));
                 // TODO: Parameter Details
                 builder.append("\n");
             }
@@ -153,10 +152,10 @@ public class MethodParser extends MethodVisitor implements NamedWritable {
         }
     }
 
-    private String parameterType(Type param) {
+    private String parameterType(int i, Type param) {
         String type = ClassParser.instanceTypeDoc(param);
         for (MethodParserExtension extensionVisitor : extensionVisitors) {
-            type = extensionVisitor.modifyParameterType(type);
+            type = extensionVisitor.modifyParameterType(i, type);
         }
         return type;
     }

@@ -2,7 +2,6 @@ package dev.moongarden.combine.extension.impl;
 
 import dev.moongarden.combine.extension.api.AnnotationParserExtension;
 import dev.moongarden.combine.extension.api.MethodParserExtension;
-import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.*;
 
 public class MethodParserExtensionImpl implements MethodParserExtension {
@@ -16,7 +15,7 @@ public class MethodParserExtensionImpl implements MethodParserExtension {
     public boolean shouldWriteParameter(int parameter) { return true; }
 
     @Override
-    public String modifyParameterType(String type) {
+    public String modifyParameterType(int parameter, String type) {
         return type;
     }
 
@@ -31,9 +30,7 @@ public class MethodParserExtensionImpl implements MethodParserExtension {
     }
 
     @Override
-    public void visitParameter(String name, int access) {
-
-    }
+    public void visitParameter(String name, int access) {}
 
     @Override
     public AnnotationParserExtension visitAnnotationDefault() {
