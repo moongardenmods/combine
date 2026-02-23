@@ -94,8 +94,9 @@ public class MethodParser extends MethodVisitor implements NamedWritable {
     public void write(ClassParser parser, StringBuilder builder) {
         if (name.equals("<init>")) {
             builder.append("--- @overload fun(");
+            final int size = parameterNames.size()-1;
             for (int i = 0; i < parameterTypes.length; i++) {
-                builder.append(parameterNames.size() > i ? parameterNames.get(i) : "arg"+i).append(": ").append(ClassParser.instanceTypeDoc(parameterTypes[i]));
+                builder.append(size > i ? parameterNames.get(i) : "arg"+i).append(": ").append(ClassParser.instanceTypeDoc(parameterTypes[i]));
                 if (i != parameterTypes.length-1) builder.append(", ");
             }
             builder.append("): ").append(ClassParser.instanceTypeDoc(parent)).append(" ").append(ClassParser.accessName(access)).append("\n");
@@ -111,13 +112,13 @@ public class MethodParser extends MethodVisitor implements NamedWritable {
             // TODO: Return Details
             builder.append("\n");
             if (name.contains("$")) {
-                builder.append(ClassParser.instanceTypeDoc(parent));
+                builder.append(ClassParser.shortTypeDoc(parent));
                 if ((access & Opcodes.ACC_STATIC) != 0) {
                     builder.append("Class");
                 }
                 builder.append("[\"").append(name).append("\"] = function");
             } else {
-                builder.append("function ").append(ClassParser.instanceTypeDoc(parent));
+                builder.append("function ").append(ClassParser.shortTypeDoc(parent));
                 if ((access & Opcodes.ACC_STATIC) != 0) {
                     builder.append("Class.");
                 } else {

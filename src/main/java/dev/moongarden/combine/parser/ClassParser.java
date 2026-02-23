@@ -174,7 +174,7 @@ public class ClassParser extends ClassVisitor {
         }
         builder.append("\n--- @class ").append(instanceTypeDoc(classType)).append(": ");
         if (superType == null) {
-            builder.append("InstanceUserdata");
+            builder.append("userdata");
         } else {
             builder.append(instanceTypeDoc(superType));
         }
@@ -182,13 +182,13 @@ public class ClassParser extends ClassVisitor {
         builder.append("\n").append("--- ").append(accessName(access)).append("\n");
         extensionVisitor.forEach((e) -> e.writeInInstance(builder));
         instanceFields.forEach((f) -> f.write(this, builder));
-        builder.append("local ").append(instanceTypeDoc(classType)).append(" = {}\n\n");
+        builder.append("local ").append(shortTypeDoc(classType)).append(" = {}\n\n");
         instanceMethods.forEach((m) -> m.write(this, builder));
 
         // Static documentation
         builder.append("--- @class ").append(classTypeDoc(classType)).append(": ");
         if (superType == null) {
-            builder.append("ClassUserdata");
+            builder.append("userdata");
         } else {
             builder.append(classTypeDoc(superType));
         }
@@ -196,9 +196,9 @@ public class ClassParser extends ClassVisitor {
         extensionVisitor.forEach((e) -> e.writeInClass(builder));
         classFields.forEach((f) -> f.write(this, builder));
         constructors.forEach((c) -> c.write(this, builder));
-        builder.append("local ").append(classTypeDoc(classType)).append(" = {}\n\n");
+        builder.append("local ").append(shortClassTypeDoc(classType)).append(" = {}\n\n");
         classMethods.forEach((m) -> m.write(this, builder));
-        builder.append("\nreturn ").append(classTypeDoc(classType)).append("\n");
+        builder.append("\nreturn ").append(shortClassTypeDoc(classType)).append("\n");
     }
 
     public String path() {
@@ -236,14 +236,20 @@ public class ClassParser extends ClassVisitor {
         return type.getClassName().replace('$', '.');
     }
 
-    public static String instanceTypeDoc(Type classType) {
+    public static String shortTypeDoc(Type classType) {
         String[] split = classType.getClassName().split("\\.");
         return split[split.length-1].replace('$', '_');
+    }
+
+    public static String instanceTypeDoc(Type classType) {
+        return classType.getClassName().replace('$', '_');
     }
 
     public static String classTypeDoc(Type classType) {
         return instanceTypeDoc(classType) + "Class";
     }
+
+    public static String shortClassTypeDoc(Type classType) { return shortTypeDoc(classType) + "Class"; }
 
     public enum MemberType {
         STATIC,

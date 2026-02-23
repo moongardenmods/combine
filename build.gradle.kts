@@ -12,7 +12,18 @@ base {
 }
 
 repositories {
-	maven("https://piston-maven.moongarden.dev/")
+	maven("https://maven.moongarden.dev/snapshots") {
+		content {
+			includeGroup("dev.moongarden")
+			includeGroup("cc.tweaked")
+		}
+	}
+	maven("https://maven.moongarden.dev/releases") {
+		content {
+			includeGroup("dev.moongarden")
+			includeGroup("cc.tweaked")
+		}
+	}
 	maven("https://maven.fabricmc.net/") {
 		content {
 			includeGroup("net.fabricmc")
@@ -23,6 +34,7 @@ repositories {
 			includeGroup("me.basiqueevangelist")
 		}
 	}
+	maven("https://piston-maven.moongarden.dev/")
 	mavenCentral()
 }
 
@@ -40,6 +52,7 @@ configurations {
 dependencies {
 	add("localRuntime", "net.minecraft:client:${project.properties["minecraft_version"]}")
 	add("localRuntime", "net.fabricmc:fabric-loader:${project.properties["loader_version"]}")
+	add("localRuntime", "dev.moongarden:allium:${project.properties["allium_version"]}")
 
 	implementation("org.jspecify:jspecify:${project.properties["jspecify_version"]}")
 	implementation("org.ow2.asm:asm:${project.properties["asm_version"]}")
