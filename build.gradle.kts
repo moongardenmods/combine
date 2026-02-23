@@ -2,8 +2,12 @@ plugins {
 	`maven-publish`
 	id("java")
 }
-
-version = properties["version"].toString()
+var v = properties["version"].toString()
+var rc = properties["rc"].toString()
+if ("0" != rc) {
+	v = "$v-rc.$rc"
+}
+version = v
 group = properties["group"].toString()
 
 

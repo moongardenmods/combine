@@ -1,5 +1,6 @@
 package dev.moongarden.combine.extension.api;
 
+import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.*;
 
 public interface MethodParserExtension {
@@ -7,6 +8,12 @@ public interface MethodParserExtension {
     boolean shouldWriteMethod();
 
     String modifyMethodName(String name);
+
+    boolean shouldWriteParameter(int parameter);
+
+    String modifyParameterType(String type);
+
+    String modifyReturnType(String type);
 
     void visitParameter(final String name, final int access);
 

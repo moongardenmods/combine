@@ -15,7 +15,7 @@ public class MethodParser extends MethodVisitor implements NamedWritable {
     private final Type parent;
     private final int access;
     private final String name;
-    private final Type[] parameterTypes;
+    private final List<Type> parameterTypes;
     private final Type returnType;
     private final String signature;
     private final String[] exceptions;
@@ -29,8 +29,8 @@ public class MethodParser extends MethodVisitor implements NamedWritable {
         this.access = access;
         this.name = name;
         Type desc = Type.getType(descriptor);
-        this.parameterTypes = desc.getArgumentTypes();
-        imports.addAll(Arrays.asList(this.parameterTypes));
+        this.parameterTypes = List.of(desc.getArgumentTypes());
+        imports.addAll(this.parameterTypes);
         this.returnType = desc.getReturnType();
         imports.add(this.returnType);
         this.signature = signature;
@@ -92,23 +92,35 @@ public class MethodParser extends MethodVisitor implements NamedWritable {
 
     @Override
     public void write(ClassParser parser, StringBuilder builder) {
+        final int typesSize = parameterTypes.size();
+        final List<Boolean> shouldWriteParams = new ArrayList<>();
+        for (int i = 0; i < typesSize; i++) {
+            int finalI = i;
+            shouldWriteParams.add(
+                    extensionVisitors.stream()
+                            .map((mpe) -> mpe.shouldWriteParameter(finalI))
+                            .reduce(true, Boolean::logicalAnd)
+            );
+        }
         if (name.equals("<init>")) {
             builder.append("--- @overload fun(");
-            final int size = parameterNames.size()-1;
-            for (int i = 0; i < parameterTypes.length; i++) {
-                builder.append(size > i ? parameterNames.get(i) : "arg"+i).append(": ").append(ClassParser.instanceTypeDoc(parameterTypes[i]));
-                if (i != parameterTypes.length-1) builder.append(", ");
+            final int namesSize = parameterNames.size();
+            for (int i = 0; i < typesSize; i++) {
+                if (!shouldWriteParams.get(i)) continue;
+                builder.append(namesSize-1 > i ? parameterNames.get(i) : "arg"+i).append(": ").append(parameterType(parameterTypes.get(i)));
+                if (i != typesSize-1) builder.append(", ");
             }
             builder.append("): ").append(ClassParser.instanceTypeDoc(parent)).append(" ").append(ClassParser.accessName(access)).append("\n");
         } else {
             builder.append("--- @").append(ClassParser.accessName(access)).append("\n");
-            for (int i = 0; i < parameterTypes.length; i++) {
+            for (int i = 0; i < typesSize; i++) {
+                if (!shouldWriteParams.get(i)) continue;
                 builder.append("--- @param ").append(parameterNames.size() > i ? parameterNames.get(i) : "arg"+i).append(" ")
-                        .append(ClassParser.instanceTypeDoc(parameterTypes[i]));
+                        .append(parameterType(parameterTypes.get(i)));
                 // TODO: Parameter Details
                 builder.append("\n");
             }
-            builder.append("--- @return ").append(ClassParser.instanceTypeDoc(returnType));
+            builder.append("--- @return ").append(returnType(returnType));
             // TODO: Return Details
             builder.append("\n");
             if (name.contains("$")) {
@@ -131,13 +143,30 @@ public class MethodParser extends MethodVisitor implements NamedWritable {
                 builder.append(identity);
             }
             builder.append("(");
-            for (int i = 0; i < parameterTypes.length; i++) {
+            for (int i = 0; i < typesSize; i++) {
+                if (!shouldWriteParams.get(i)) continue;
                 String pName = parameterNames.size() > i ? parameterNames.get(i) : "arg"+i;
                 builder.append(pName);
-                if (i != parameterTypes.length-1) builder.append(", ");
+                if (i != typesSize-1) builder.append(", ");
             }
             builder.append(") end\n\n");
         }
+    }
+
+    private String parameterType(Type param) {
+        String type = ClassParser.instanceTypeDoc(param);
+        for (MethodParserExtension extensionVisitor : extensionVisitors) {
+            type = extensionVisitor.modifyParameterType(type);
+        }
+        return type;
+    }
+
+    private String returnType(Type param) {
+        String type = ClassParser.instanceTypeDoc(param);
+        for (MethodParserExtension extensionVisitor : extensionVisitors) {
+            type = extensionVisitor.modifyReturnType(type);
+        }
+        return type;
     }
 
     @Override
